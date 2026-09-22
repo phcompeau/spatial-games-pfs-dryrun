@@ -1,0 +1,35 @@
+Spatial games: what I want to build
+
+
+What I want to build.
+
+A web page that teaches this little model. It shows the grid playing out, with a short explanation next to it and a few controls, and it lives at a link I can send to anyone.
+
+
+The model, the way we set it up.
+
+* Every square is either a cooperator or a defector.
+* When two squares meet, they play one round. Two cooperators each get 1 point. A defector meeting a cooperator takes b points (some number bigger than 1) and the cooperator gets nothing. Two defectors both get nothing, since there is no one to take advantage of.
+* Each square plays that round against the 8 squares touching it AND against itself, for 9 games total, and adds up its points.
+* Then every square, all at the same moment, looks at itself and its 8 neighbors and copies whoever scored highest. Then it does the whole thing again, and again.
+* On a tie, a square keeps its own strategy. A neighbor only flips it if the neighbor scores strictly higher.
+* Squares on the edge just have fewer neighbors, but they still play themselves.
+
+
+How I will know it is built.
+
+Before I trust anything the grid does, I want a few things I can check by hand:
+
+* Take one cooperator surrounded by cooperators. It should score 9: one point for each of the 8 neighbors plus one for playing itself. If it says 8, the self game is missing. If it says 10, something is double counting.
+* Take one defector surrounded by cooperators. It should score 8b, because it takes b from each neighbor and gets nothing from playing itself.
+* A grid that is all cooperators should stay all cooperators, no matter what b is.
+* Every square has to update from the old grid, all at once. I can work out one step of a tiny grid on paper, and the code should give me the same thing.
+* With b between 1.8 and 2, cooperators and defectors should coexist for a long time. Below about 1.8, cooperators should take over. Above 2, defectors should take over.
+
+
+What I want the page to have.
+
+The grid running in color, a slider for b so I can turn the temptation up and down and see what happens, a plain explanation of the rules, and play, pause, and reset. Under the hood, plain JavaScript in a single folder, so it runs right in the browser with nothing to install. Once we find the settings that are interesting, I will add buttons that jump straight to them.
+
+
+I am done when it runs, those checks pass, and it is live at a link I can text to a friend. :)
