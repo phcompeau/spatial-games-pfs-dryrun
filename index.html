@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spatial Games</title>
+<style>
+  :root {
+    --ink: #17191c; --muted: #5c6470; --line: #e2e5ea; --bg: #f7f8fa; --card: #ffffff;
+    --coop: #2b5fd9; --defect: #d92b2b; --new-defect: #f2c231; --new-coop: #35a853;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 30px; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  canvas { width: 100%; height: auto; display: block; image-rendering: pixelated;
+    border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  button { font: inherit; font-weight: 500; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+  button:hover { border-color: #c3c9d2; }
+  button.primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .readout { display: flex; gap: 22px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .readout div { font-variant-numeric: tabular-nums; }
+  .readout span { display: block; color: var(--muted); font-size: 13px; }
+  .readout strong { font-size: 22px; font-weight: 600; }
+  label.slider { display: block; margin-top: 18px; }
+  label.slider b { font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; margin-top: 6px; }
+  .presets { display: grid; gap: 8px; margin-top: 8px; }
+  .presets button { text-align: left; }
+  .presets small { display: block; color: var(--muted); font-weight: 400; }
+  .key { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 14px; }
+  .key li { display: flex; align-items: center; gap: 9px; }
+  .swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; }
+  .rules { margin: 0; padding-left: 20px; }
+  .rules li { margin-bottom: 7px; }
+  .foot { color: var(--muted); font-size: 14px; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cooperation on a grid</h1>
+  <p class="sub">The spatial game of Nowak and May (1992), where cheating always pays better but cooperators survive anyway.</p>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <canvas id="grid" width="404" height="404"></canvas>
+        <div class="controls">
+          <button id="play" class="primary">Play</button>
+          <button id="step">Step</button>
+          <button id="reset">Reset</button>
+        </div>
+        <div class="readout">
+          <div><span>Generation</span><strong id="gen">0</strong></div>
+          <div><span>Cooperators</span><strong id="share">90.0%</strong></div>
+          <div><span>Temptation b</span><strong id="bout">1.85</strong></div>
+        </div>
+        <label class="slider">Temptation to defect, <b>b = <span id="blabel">1.85</span></b>
+          <input id="b" type="range" min="1" max="2.5" step="0.01" value="1.85">
+        </label>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2>The rules</h2>
+        <ol class="rules">
+          <li>Every square is a cooperator or a defector.</li>
+          <li>Two cooperators who meet each score 1. A defector meeting a cooperator takes <em>b</em> and leaves the cooperator nothing. Two defectors both get nothing.</li>
+          <li>Each square plays one round against the 8 squares touching it and against itself, 9 games in all, and adds up its points.</li>
+          <li>Then every square, all at the same moment, copies whichever of those 9 squares scored highest. A tie leaves a square as it is.</li>
+        </ol>
+        <p style="margin-bottom:0">Defecting always pays better in a single meeting, so a lone cooperator has no chance. Yet cooperators packed into a block feed each other faster than the defectors on the edge can eat them, and cooperation survives.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Presets</h2>
+        <div class="presets">
+          <button data-b="1.7" data-mode="random">Cooperators dominate<small>b = 1.7, random start</small></button>
+          <button data-b="1.85" data-mode="random">Coexistence<small>b = 1.85, random start</small></button>
+          <button data-b="2.05" data-mode="random">Defectors dominate<small>b = 2.05, random start</small></button>
+          <button data-b="1.85" data-mode="single">Evolutionary kaleidoscope<small>b = 1.85, one defector in the middle</small></button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h2>Colors</h2>
+        <ul class="key">
+          <li><span class="swatch" style="background:var(--coop)"></span> cooperator, and was one before</li>
+          <li><span class="swatch" style="background:var(--defect)"></span> defector, and was one before</li>
+          <li><span class="swatch" style="background:var(--new-defect)"></span> just turned defector</li>
+          <li><span class="swatch" style="background:var(--new-coop)"></span> just turned cooperator</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="foot">Built live in 02-120, Programming for Scientists, at Carnegie Mellon. The model and its tests live in the repository next to this page.</p>
+</div>
+
+<script src="rules.js"></script>
+<script src="model.js"></script>
+<script>
+(function () {
+  var M = window.SpatialModel, R = window.SpatialRules;
+  var C = R.COOPERATOR, D = R.DEFECTOR;
+  var SIZE = 101, CELL = 4;
+  var canvas = document.getElementById("grid");
+  canvas.width = SIZE * CELL; canvas.height = SIZE * CELL;
+  var ctx = canvas.getContext("2d");
+  var colors = { CC: "#2b5fd9", DD: "#d92b2b", CD: "#f2c231", DC: "#35a853" };
+
+  var grid, previous, generation = 0, b = 1.85, mode = "random", timer = null;
+
+  function start() {
+    grid = (mode === "single") ? M.singleDefectorGrid(SIZE) : M.randomGrid(SIZE, 0.10);
+    previous = grid;
+    generation = 0;
+    draw();
+  }
+  function draw() {
+    for (var i = 0; i < SIZE; i++) {
+      for (var j = 0; j < SIZE; j++) {
+        ctx.fillStyle = colors[previous[i][j] + grid[i][j]];
+        ctx.fillRect(j * CELL, i * CELL, CELL, CELL);
+      }
+    }
+    document.getElementById("gen").textContent = generation;
+    document.getElementById("share").textContent = (100 * M.cooperatorShare(grid)).toFixed(1) + "%";
+  }
+  function step() {
+    previous = grid;
+    grid = M.stepGrid(grid, b);
+    generation++;
+    draw();
+  }
+  function setPlaying(on) {
+    if (on && !timer) { timer = setInterval(step, 120); document.getElementById("play").textContent = "Pause"; }
+    else if (!on && timer) { clearInterval(timer); timer = null; document.getElementById("play").textContent = "Play"; }
+  }
+  document.getElementById("play").onclick = function () { setPlaying(!timer); };
+  document.getElementById("step").onclick = function () { setPlaying(false); step(); };
+  document.getElementById("reset").onclick = function () { setPlaying(false); start(); };
+  document.getElementById("b").oninput = function () {
+    b = parseFloat(this.value);
+    document.getElementById("blabel").textContent = b.toFixed(2);
+    document.getElementById("bout").textContent = b.toFixed(2);
+  };
+  var buttons = document.querySelectorAll(".presets button");
+  for (var k = 0; k < buttons.length; k++) {
+    buttons[k].onclick = function () {
+      setPlaying(false);
+      b = parseFloat(this.getAttribute("data-b"));
+      mode = this.getAttribute("data-mode");
+      document.getElementById("b").value = b;
+      document.getElementById("blabel").textContent = b.toFixed(2);
+      document.getElementById("bout").textContent = b.toFixed(2);
+      start();
+      setPlaying(true);
+    };
+  }
+  start();
+})();
+</script>
+</body>
+</html>
